@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Build output
+dist/
+**/dist/
+build/
+coverage/
+
+# Logs
+*.log
+
+# Service account credentials
+serviceAccountKey.json
+**/serviceAccountKey.json
+*serviceAccount*.json
