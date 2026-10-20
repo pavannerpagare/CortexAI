@@ -2,18 +2,21 @@
   "name": "auth",
   "version": "1.0.0",
   "main": "index.js",
-   "type": "module",
+  "type": "module",
   "scripts": {
     "dev": "nodemon index.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  
   "description": "",
   "dependencies": {
+    "cookie-parser": "^1.4.7",
     "dotenv": "^18.0.5",
     "express": "^5.2.1",
+    "firebase-admin": "^13.0.0",
+    "ioredis": "^6.0.0",
+    "mongoose": "^9.10.4",
     "nodemon": "^3.1.14"
   }
 }

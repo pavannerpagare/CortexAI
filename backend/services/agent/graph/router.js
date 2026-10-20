@@ -2,11 +2,14 @@ import { getModel } from "../config/llmModel.js";
 
 export const router = async (state) => {
   if (state.agent && state.agent !== "auto") {
-  return {
-    ...state,
-    agent: state.agent === "image" ? "vision" : state.agent,
-  };
-}
+    const requested = state.agent === "image" ? "vision" : state.agent;
+    const implemented = ["chat", "search", "coding", "pdf", "ppt", "vision"];
+    const agent = implemented.includes(requested) ? requested : "chat";
+    return {
+      ...state,
+      agent,
+    };
+  }
 
   const llm = await getModel("router");
   const prompt = `You are an agent router.
@@ -69,8 +72,11 @@ User Query:
 
   const response = await llm.invoke(prompt);
 
+  const raw = response.content.trim().toLowerCase();
+  const implemented = ["chat", "search", "coding", "pdf", "ppt", "vision"];
+
   return {
     ...state,
-    agent: response.content.trim().toLowerCase(),
+    agent: implemented.includes(raw) ? raw : "chat",
   };
 };

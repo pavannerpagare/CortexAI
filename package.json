@@ -1,0 +1,18 @@
+{
+  "name": "cortexai",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev:frontend": "npm --prefix frontend run dev",
+    "dev:gateway": "npm --prefix backend/gateway run dev",
+    "dev:auth": "npm --prefix backend/services/auth run dev",
+    "dev:chat": "npm --prefix backend/services/chat run dev",
+    "dev:agent": "npm --prefix backend/services/agent run dev",
+    "install:all": "npm --prefix frontend install && npm --prefix backend/gateway install && npm --prefix backend/services/auth install && npm --prefix backend/services/chat install && npm --prefix backend/services/agent install && npm --prefix backend install",
+    "dev": "concurrently -n gateway,auth,chat,agent,frontend -c blue,green,magenta,cyan,yellow \"npm:dev:gateway\" \"npm:dev:auth\" \"npm:dev:chat\" \"npm:dev:agent\" \"npm:dev:frontend\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}
