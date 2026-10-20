@@ -1,21 +1,33 @@
-import express from "express"
-import dotenv from "dotenv"
-import connectDb from "./config/db.js"
-import router from "../routes/auth.route.js"
-dotenv.config()
+import express from "express";
+import dotenv from "dotenv";
+import cookieParser from "cookie-parser";
+import connectDb from "./config/db.js";
+import router from "../routes/auth.route.js";
 
-const port = process.env.PORT
+dotenv.config();
 
-const app = express()
+const port = process.env.PORT;
+if (!port) {
+  console.error("PORT is not set. Configure it in backend/services/auth/.env");
+  process.exit(1);
+}
 
-app.use(express.json())
-app.use("/", router)
+const app = express();
 
-app.get("/", (req,res)=> {
-    res.json({message:"hello from auth"})
-})
+app.use(express.json());
+app.use(cookieParser());
+app.use("/", router);
 
-app.listen(port, () => {
-    console.log(`auth started at ${port}`)
-    connectDb()
-})
+app.get("/", (req, res) => {
+  res.json({ message: "hello from auth" });
+});
+
+app.listen(port, async () => {
+  console.log(`auth started at ${port}`);
+  try {
+    await connectDb();
+  } catch (error) {
+    console.error(error.message);
+    process.exit(1);
+  }
+});

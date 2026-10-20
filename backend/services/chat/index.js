@@ -1,21 +1,31 @@
-import express, { Router } from "express"
-import dotenv from "dotenv"
-import connectDb from "./config/db.js"
-import router from "./routes/chat.routes.js"
-dotenv.config()
+import express from "express";
+import dotenv from "dotenv";
+import connectDb from "./config/db.js";
+import router from "./routes/chat.routes.js";
 
-const port = process.env.PORT
+dotenv.config();
 
-const app = express()
+const port = process.env.PORT;
+if (!port) {
+  console.error("PORT is not set. Configure it in backend/services/chat/.env");
+  process.exit(1);
+}
 
-app.use(express.json())
-app.use("/", router)
+const app = express();
 
-app.get("/", (req,res)=> {
-    res.json({message:"hello from chat"})
-})
+app.use(express.json());
+app.use("/", router);
 
-app.listen(port, () => {
-    console.log(`chat started at ${port}`)
-    connectDb()
-})
+app.get("/", (req, res) => {
+  res.json({ message: "hello from chat" });
+});
+
+app.listen(port, async () => {
+  console.log(`chat started at ${port}`);
+  try {
+    await connectDb();
+  } catch (error) {
+    console.error(error.message);
+    process.exit(1);
+  }
+});
