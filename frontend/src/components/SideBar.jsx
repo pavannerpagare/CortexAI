@@ -1,5 +1,6 @@
 import {
   Coins,
+  FolderOpen,
   LogOut,
   MessageSquare,
   PanelLeftIcon,
@@ -19,9 +20,10 @@ import {
 import { createConversation } from "../features/createConversation";
 import logOut from "../features/logOut";
 import { setUserData } from "../redux/userSlice";
-
+import DocumentLibrary from "./documentLibrary";
 function SideBar() {
   const [collapsed, setCollapsed] = useState(false);
+  const [showDocumentLibrary, setShowDocumentLibrary] = useState(false);
   const dispatch = useDispatch();
   const [imageError, setImageError] = useState(false);
   const { conversations, selectedConversation } = useSelector(
@@ -72,7 +74,7 @@ function SideBar() {
           className="flex items-center justify-center w-9 h-9 rounded-xl text-slate-500 
         hover:text-slate-200 hover:bg-white/[0.05] transition-colors duration-150 bg-transparent 
         border-none cursor-pointer"
-          onClick={()=>dispatch(setSelectedConversation(null))}
+          onClick={() => dispatch(setSelectedConversation(null))}
         >
           <Plus size={17} />
         </button>
@@ -160,7 +162,7 @@ function SideBar() {
             className="flex items-center justify-center w-7 h-7 rounded-lg text-slate-500
                         hover:text-slate-200 hover:bg-white/5 transition-colors duration-150
                         bg-transparent border-none cursor-pointer"
-            onClick={()=>dispatch(setSelectedConversation(null))}
+            onClick={() => dispatch(setSelectedConversation(null))}
           >
             <PenSquare size={14} />
           </button>
@@ -174,10 +176,24 @@ function SideBar() {
                         rounded-xl py-[10px]
                         border-none cursor-pointer
                         hover:opacity-90 transition-opacity duration-150"
-            onClick={()=>dispatch(setSelectedConversation(null))}
+            onClick={() => dispatch(setSelectedConversation(null))}
           >
             <Plus size={15} />
             New Chat
+          </button>
+        </div>
+
+        <div className="px-3 pt-2">
+          <button
+            type="button"
+            onClick={() => setShowDocumentLibrary(true)}
+            className="w-full flex items-center gap-3 rounded-xl
+      border border-white/[0.06] bg-white/[0.02]
+      px-3 py-2.5 text-sm text-slate-300
+      hover:bg-white/[0.06] hover:text-white"
+          >
+            <FolderOpen size={17} className="text-indigo-400" />
+            <span>Document Library</span>
           </button>
         </div>
 
@@ -296,6 +312,11 @@ function SideBar() {
           )}
         </div>
       </div>
+      {/* Document Library Modal */}
+      <DocumentLibrary
+        isOpen={showDocumentLibrary}
+        onClose={() => setShowDocumentLibrary(false)}
+      />
     </div>
   );
 }

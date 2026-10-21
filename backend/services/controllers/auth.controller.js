@@ -1,5 +1,4 @@
-import { getAuth } from "firebase-admin/auth";
-import { app } from "../auth/config/firebase.js";
+import { adminAuth } from "../auth/config/firebase.js";
 import User from "../models/user.model.js";
 import crypto from "crypto";
 import redis from "../../shared/redis/redis.js";
@@ -10,7 +9,7 @@ export const login = async (req, res) => {
 
     console.log("TOKEN RECEIVED:", !!token);
 
-    const decoded = await getAuth(app).verifyIdToken(token);
+    const decoded = await adminAuth.verifyIdToken(token);
 
     console.log("FIREBASE USER:", decoded.email);
 

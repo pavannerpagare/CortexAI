@@ -1,6 +1,6 @@
-import Markdown from 'react-markdown'
+import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-function MessageBubble({ role, content }) {
+function MessageBubble({ role, content, sources = [] }) {
   const isUser = role === "user";
 
   return (
@@ -13,10 +13,24 @@ function MessageBubble({ role, content }) {
         : "bg-white/[0.04] border border-white/[0.07] text-slate-200 rounded-tl-sm"
     }`}
       >
-    <Markdown remarkPlugins={[remarkGfm]}>
-        {content}
-      </Markdown>
-        
+        <Markdown remarkPlugins={[remarkGfm]}>{content}</Markdown>
+
+        {role === "assistant" && sources.length > 0 && (
+          <div className="mt-3 border-t border-white/10 pt-3">
+            <p className="mb-2 text-xs font-semibold text-slate-400">Sources</p>
+
+            <ul className="space-y-1">
+              {sources.map((source, index) => (
+                <li
+                  key={`${source.documentId}-${source.chunkIndex}-${index}`}
+                  className="text-xs text-slate-400"
+                >
+                  {source.filename} — chunk {source.chunkIndex}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
     </div>
   );

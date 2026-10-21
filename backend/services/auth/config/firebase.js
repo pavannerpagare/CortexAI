@@ -1,39 +1,36 @@
-import { existsSync, readFileSync } from "node:fs";
+﻿import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { cert, initializeApp } from "firebase-admin/app";
+import {
+  cert,
+  getApps,
+  initializeApp,
+} from "firebase-admin/app";
+import { getAuth } from "firebase-admin/auth";
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const keyPath = join(__dirname, "..", "serviceAccountKey.json");
+const currentDir = dirname(fileURLToPath(import.meta.url));
+const keyPath = join(currentDir, "..", "serviceAccountKey.json");
 
 if (!existsSync(keyPath)) {
-  throw new Error(
-    "serviceAccountKey.json is missing at backend/services/auth/serviceAccountKey.json. " +
-      "Copy serviceAccountKey.example.json, fill in your Firebase Admin credentials, and rename it.",
-  );
+  throw new Error("Missing auth/serviceAccountKey.json");
 }
 
-let serviceAccount;
-try {
-  serviceAccount = JSON.parse(readFileSync(keyPath, "utf8"));
-} catch (error) {
-  throw new Error(`Failed to parse serviceAccountKey.json: ${error.message}`);
-}
-
-const PLACEHOLDER_FIELDS = ["project_id", "private_key", "client_email"];
-const stillPlaceholder = PLACEHOLDER_FIELDS.some(
-  (field) =>
-    !serviceAccount[field] ||
-    String(serviceAccount[field]).startsWith("REPLACE"),
+const serviceAccount = JSON.parse(
+  readFileSync(keyPath, "utf8")
 );
 
-if (stillPlaceholder) {
-  throw new Error(
-    "serviceAccountKey.json still contains REPLACE_* placeholders. " +
-      "Replace them with real Firebase Admin credentials before starting the auth service.",
-  );
+if (
+  !serviceAccount.project_id ||
+  !serviceAccount.client_email ||
+  !serviceAccount.private_key
+) {
+  throw new Error("Firebase service-account credentials are incomplete.");
 }
 
-export const app = initializeApp({
-  credential: cert(serviceAccount),
-});
+const app = getApps().find((item) => item.name === "[DEFAULT]") ??
+  initializeApp({
+    credential: cert(serviceAccount),
+    projectId: serviceAccount.project_id,
+  });
+
+export const adminAuth = getAuth(app);

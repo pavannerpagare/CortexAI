@@ -19,4 +19,29 @@ coverage/
 # Service account credentials
 serviceAccountKey.json
 **/serviceAccountKey.json
-*serviceAccount*.json
+*serviceAccount*.json# Dependencies
+node_modules/
+**/node_modules/
+
+# Build output
+dist/
+build/
+coverage/
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+
+# Firebase service account credentials
+**/serviceAccountKey.json
+**/*service-account*.json
+**/*serviceAccount*.json
+**/firebase-adminsdk-*.json
+
+# Logs
+*.log
+npm-debug.log*
