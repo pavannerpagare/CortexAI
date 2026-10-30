@@ -1,35 +1,41 @@
-import redis from "../../shared/redis/redis.js"
+import redis from "../../shared/redis/redis.js";
 
 const protect = async (req, res, next) => {
-    try {
-        console.log("COOKIES:", req.cookies)
+  try {
+    const sessionId = req.cookies?.session;
 
-        const sessionId = req.cookies?.session
-
-        console.log("SESSION ID:", sessionId)
-
-        if (!sessionId) {
-            return res.status(401).json({ message: "unauthorized" })
-        }
-
-        const session = await redis.get(`session-${sessionId}`)
-
-        console.log("REDIS SESSION:", session)
-
-        if (!session) {
-            return res.status(401).json({ message: "session expired" })
-        }
-
-        req.user = JSON.parse(session)
-        next()
-
-    } catch (error) {
-        console.error("PROTECT ERROR:", error)
-
-        return res.status(500).json({
-            message: `protect error ${error}`
-        })
+    if (!sessionId) {
+      return res.status(401).json({ message: "unauthorized" });
     }
-}
 
-export default protect
+    delete req.headers["x-user-id"];
+
+    const session = await redis.get(`session-${sessionId}`);
+
+    if (!session) {
+      return res.status(401).json({ message: "session expired" });
+    }
+
+    let parsedSession;
+    try {
+      parsedSession = JSON.parse(session);
+    } catch {
+      return res.status(401).json({ message: "session expired" });
+    }
+
+    if (!parsedSession?.userId) {
+      return res.status(401).json({ message: "session expired" });
+    }
+
+    req.user = parsedSession;
+    req.userId = String(parsedSession.userId);
+    delete req.headers["x-user-id"];
+    return next();
+  } catch (error) {
+    return res.status(500).json({
+      message: "protect error",
+    });
+  }
+};
+
+export default protect;
