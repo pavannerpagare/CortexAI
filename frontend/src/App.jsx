@@ -14,7 +14,7 @@ function App() {
       dispatch(setUserData(data))
     }
     getUser()
-  }, [])
+    }, [dispatch]);
 
   return (
     <>

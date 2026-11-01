@@ -10,4 +10,6 @@ export const agentState = Annotation.Root({
   userId: Annotation(),
   ragContext: Annotation(),
   ragSources: Annotation(),
+  artifacts: Annotation(),
+  imageData: Annotation(),
 });

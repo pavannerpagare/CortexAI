@@ -1,10 +1,14 @@
+import mongoose from "mongoose";
 import Conversation from "../models/conversation.model.js";
 import Message from "../models/message.model.js";
 
+const getUserId = (req) => String(req.headers["x-user-id"] || "");
+
 export const createConversation = async (req, res) => {
   try {
-    const userId = req.headers["x-user-id"];
-    console.log("userId:", userId);
+    const userId = getUserId(req);
+    if (!userId) return res.status(401).json({ message: "Not authenticated." });
+
     const conversation = await Conversation.create({
       userId: userId,
     });
@@ -19,8 +23,9 @@ export const createConversation = async (req, res) => {
 
 export const getConversations = async (req, res) => {
   try {
-    const userId = req.headers["x-user-id"];
-    console.log("userId:", userId);
+    const userId = getUserId(req);
+    if (!userId) return res.status(401).json({ message: "Not authenticated." });
+
     const conversations = await Conversation.find({
       userId: userId,
     }).sort({ updatedAt: -1 });
@@ -126,7 +131,24 @@ export const deleteConversation = async (req, res) => {
 
 export const saveMessage = async (req, res) => {
   try {
-    const { conversationId, role, content, images, sources = [] } = req.body;
+    const userId = getUserId(req);
+    const { conversationId, role, content, images, sources = [], artifacts = [] } = req.body;
+
+    if (!userId) return res.status(401).json({ message: "Not authenticated." });
+    if (!mongoose.isValidObjectId(conversationId)) {
+      return res.status(400).json({ message: "Invalid conversation ID." });
+    }
+    if (!['user', 'assistant'].includes(role) || typeof content !== "string") {
+      return res.status(400).json({ message: "Invalid message body." });
+    }
+
+    const conversation = await Conversation.findOne({
+      _id: conversationId,
+      userId,
+    });
+    if (!conversation) {
+      return res.status(404).json({ message: "Conversation not found." });
+    }
 
     const message = await Message.create({
       conversationId,
@@ -134,23 +156,42 @@ export const saveMessage = async (req, res) => {
       role,
       images,
       sources,
+      artifacts,
     });
 
     return res.status(200).json(message);
   } catch (error) {
+    if (error.name === "ValidationError" || error.name === "CastError") {
+      return res.status(400).json({ message: "Invalid message body." });
+    }
     return res.status(500).json({
-      message: `save message error ${error}`,
+      message: "Unable to save message.",
     });
   }
 };
 
 export const getMessages = async (req, res) => {
   try {
+    const userId = getUserId(req);
+    if (!userId) return res.status(401).json({ message: "Not authenticated." });
+    const { conversationId } = req.params;
+    if (!mongoose.isValidObjectId(conversationId)) {
+      return res.status(400).json({ message: "Invalid conversation ID." });
+    }
+
+    const conversation = await Conversation.findOne({
+      _id: conversationId,
+      userId,
+    });
+    if (!conversation) {
+      return res.status(404).json({ message: "Conversation not found." });
+    }
+
     const messages = await Message.find({
-      conversationId: req.params.conversationId,
+      conversationId,
     }).sort({ createdAt: 1 });
     return res.status(200).json(messages);
   } catch (error) {
-    return res.status(500).json({ message: `get message error ${error}` });
+    return res.status(500).json({ message: "Unable to load messages." });
   }
 };

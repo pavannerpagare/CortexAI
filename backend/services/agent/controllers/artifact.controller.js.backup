@@ -1,0 +1,53 @@
+﻿import mongoose from "mongoose";
+import GeneratedArtifact from "../models/generatedArtifact.model.js";
+
+export const downloadArtifact = async (req, res) => {
+  try {
+    const userId = String(req.headers["x-user-id"] || "");
+    const { artifactId } = req.params;
+
+    if (!userId) {
+      return res.status(401).json({
+        message: "Not authenticated.",
+      });
+    }
+
+    if (!mongoose.isValidObjectId(artifactId)) {
+      return res.status(400).json({
+        message: "Invalid artifact ID.",
+      });
+    }
+
+    const artifact = await GeneratedArtifact.findOne({
+      _id: artifactId,
+      userId,
+    }).select("filename contentType data");
+
+    if (!artifact) {
+      return res.status(404).json({
+        message: "PDF not found.",
+      });
+    }
+
+const filename = String(
+  artifact.filename || "cortexai-artifact"
+).replace(/[\\/\r\n"]/g, "_");
+
+res.set({
+  "Content-Type":
+    artifact.contentType || "application/octet-stream",
+      "Content-Disposition": `attachment; filename="${filename}"`,
+      "Content-Length": artifact.data.length,
+      "Cache-Control": "private, no-store",
+      "X-Content-Type-Options": "nosniff",
+    });
+
+    return res.send(artifact.data);
+  } catch (error) {
+    console.error("DOWNLOAD ARTIFACT ERROR:", error);
+
+    return res.status(500).json({
+      message: "Unable to download the PDF.",
+    });
+  }
+};

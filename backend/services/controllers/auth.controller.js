@@ -7,11 +7,7 @@ export const login = async (req, res) => {
   try {
     const { token } = req.body;
 
-    console.log("TOKEN RECEIVED:", !!token);
-
     const decoded = await adminAuth.verifyIdToken(token);
-
-    console.log("FIREBASE USER:", decoded.email);
 
     let user = await User.findOne({
       firebaseUid: decoded.uid,
@@ -39,23 +35,19 @@ export const login = async (req, res) => {
       7 * 24 * 60 * 60,
     );
 
-    // console.log("SESSION STORED:", 
-    //     await redis.get(`session-${sessionId}`)
-    // );
-
     res.cookie("session", sessionId, {
       httpOnly: true,
-      secure: false,
-      sameSite: "strict",
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
     return res.status(200).json(user);
   } catch (error) {
-    console.error("🔥 LOGIN ERROR:", error);
+    console.error("LOGIN ERROR");
 
     return res.status(500).json({
-      message: error.message,
+      message: "Unable to sign in.",
     });
   }
 };

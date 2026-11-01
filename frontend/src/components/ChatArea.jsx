@@ -1,60 +1,104 @@
-import { useDispatch, useSelector } from "react-redux";
+import { useEffect, useState } from "react";
+import { useDispatch, useSelector, useStore } from "react-redux";
+
 import ChatInput from "./ChatInput";
 import MessageList from "./MessageList";
 import Nav from "./Nav";
-import { useEffect,useRef } from "react";
-import { setMessages } from "../redux/messageSlice";
+
+import { setConversationMessages } from "../redux/messageSlice";
 import getMessages from "../features/getMessages";
 
 function ChatArea() {
-  const{selectedConversation} = useSelector(state => state.conversation)
-  const dispatch = useDispatch()
-  const { messages } = useSelector((state) => state.message);
+  const { selectedConversation } = useSelector((state) => state.conversation);
 
-const messagesRef = useRef(messages);
-messagesRef.current = messages;
+  const conversationId = selectedConversation?._id;
 
-const conversationId = selectedConversation?._id;
+  const dispatch = useDispatch();
+  const store = useStore();
+
+  const [loadingConversationId, setLoadingConversationId] = useState(null);
+
+  const [loadError, setLoadError] = useState(null);
+  const [retryCount, setRetryCount] = useState(0);
+
   useEffect(() => {
-  let active = true;
+    if (!conversationId) return;
 
-  const loadMessages = async () => {
-    if (!conversationId) {
-      dispatch(setMessages([]));
-      return;
-    }
+    let active = true;
 
-    // Remember the current message array before fetching
-    const messagesBeforeFetch = messagesRef.current;
+    const loadMessages = async () => {
+      if (!active) return;
 
-    try {
-      const data = await getMessages(conversationId);
+      const messagesBeforeFetch =
+        store.getState().message.messagesByConversation[conversationId];
 
-      // Don't overwrite messages added while the request was pending
-      if (
-        active &&
-        messagesRef.current === messagesBeforeFetch
-      ) {
-        dispatch(setMessages(data));
+      if (!Array.isArray(messagesBeforeFetch)) {
+        setLoadingConversationId(conversationId);
+      } else {
+        setLoadingConversationId(null);
       }
-    } catch (error) {
-      console.error("Failed to load messages:", error);
-    }
-  };
 
-  loadMessages();
+      setLoadError(null);
 
-  return () => {
-    active = false;
-  };
-}, [conversationId, dispatch]);
+      try {
+        const data = await getMessages(conversationId);
+
+        const currentMessages =
+          store.getState().message.messagesByConversation[conversationId];
+
+        if (active && currentMessages === messagesBeforeFetch) {
+          dispatch(
+            setConversationMessages({
+              conversationId,
+              messages: data,
+            }),
+          );
+        }
+      } catch (error) {
+        console.error("Failed to load conversation:", error);
+
+        if (active) {
+          setLoadError({
+            conversationId,
+            message: "Unable to load chat history.",
+          });
+        }
+      } finally {
+        if (active) {
+          setLoadingConversationId((current) =>
+            current === conversationId ? null : current,
+          );
+        }
+      }
+    };
+
+    // Run asynchronously to avoid synchronous state updates in the effect.
+    Promise.resolve().then(loadMessages);
+
+    return () => {
+      active = false;
+    };
+  }, [conversationId, dispatch, store, retryCount]);
+
+  const isLoading =
+    Boolean(conversationId) && loadingConversationId === conversationId;
+
+  const currentError =
+    loadError && loadError.conversationId === conversationId
+      ? loadError.message
+      : "";
 
   return (
     <div className="flex-1 min-w-0 h-full flex flex-col">
-        <Nav />
-        <MessageList />
-        <ChatInput />
-      
+      <Nav />
+
+      <MessageList
+        isLoading={isLoading}
+        loadError={currentError}
+        onRetry={() => setRetryCount((count) => count + 1)}
+      />
+
+      <ChatInput />
     </div>
   );
 }

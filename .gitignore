@@ -5,43 +5,46 @@ node_modules/
 # Environment variables and secrets
 .env
 .env.*
+**/.env
+**/.env.*
+
+# Allow example environment templates
 !.env.example
+!**/.env.example
 
 # Build output
 dist/
 **/dist/
 build/
+**/build/
 coverage/
+**/coverage/
 
 # Logs
 *.log
-
-# Service account credentials
-serviceAccountKey.json
-**/serviceAccountKey.json
-*serviceAccount*.json# Dependencies
-node_modules/
-**/node_modules/
-
-# Build output
-dist/
-build/
-coverage/
-
-# Environment variables and secrets
-.env
-.env.*
-!.env.example
-**/.env
-**/.env.*
-!**/.env.example
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
 
 # Firebase service account credentials
+serviceAccountKey.json
 **/serviceAccountKey.json
 **/*service-account*.json
 **/*serviceAccount*.json
 **/firebase-adminsdk-*.json
 
-# Logs
-*.log
-npm-debug.log*
+# Other private credentials
+**/credentials*.json
+*.pem
+**/*.pem
+*.key
+**/*.key
+*.p12
+**/*.p12
+
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# Vite cache
+**/.vite/

@@ -25,6 +25,18 @@ const messageSchema = new mongoose.Schema(
       ],
       default: [],
     },
+    
+    artifacts: {
+      type: [
+        {
+          artifactId: String,
+          filename: String,
+          contentType: String,
+          downloadUrl: String,
+        },
+      ],
+      default: [],
+    },
   },
   {
     timestamps: true,

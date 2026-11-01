@@ -7,6 +7,7 @@ const REQUIRED_ENV = [
   "CHAT_SERVICE",
   "AGENT_SERVICE",
   "REDIS_URL",
+  "GATEWAY_SECRET",
 ];
 const missing = REQUIRED_ENV.filter((key) => !process.env[key]);
 if (missing.length) {
