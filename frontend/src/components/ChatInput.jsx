@@ -83,47 +83,58 @@ function ChatInput() {
     }
   };
 
-  const handleImageSelect = (event) => {
-    const file = event.target.files?.[0];
 
-    event.target.value = "";
+const handleImageSelect = async (event) => {
+  const input = event.currentTarget;
+  const file = input.files?.[0];
 
-    if (!file) return;
+  input.value = "";
 
-    const allowedTypes = ["image/png", "image/jpeg", "image/webp"];
+  if (!file) return;
 
-    if (!allowedTypes.includes(file.type)) {
-      setImageStatus("Please choose a PNG, JPEG, or WebP image.");
-      return;
+  const allowedTypes = ["image/png", "image/jpeg", "image/webp"];
+
+  if (!allowedTypes.includes(file.type)) {
+    setImageStatus("Please choose a PNG, JPEG, or WebP image.");
+    return;
+  }
+
+  if (file.size > 5 * 1024 * 1024) {
+    setImageStatus("Image must be smaller than 5 MB.");
+    return;
+  }
+
+  try {
+    setImageStatus("Reading image...");
+
+    const buffer = await file.arrayBuffer();
+    const bytes = new Uint8Array(buffer);
+
+    // Convert bytes to a binary string in safe chunks.
+    let binary = "";
+    const chunkSize = 0x8000;
+
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      const chunk = bytes.subarray(i, i + chunkSize);
+      binary += String.fromCharCode(...chunk);
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      setImageStatus("Image must be smaller than 5 MB.");
-      return;
-    }
+    const base64 = window.btoa(binary);
+    const dataUrl = `data:${file.type};base64,${base64}`;
 
-    const reader = new FileReader();
+    setSelectedImage({
+      name: file.name,
+      dataUrl,
+    });
 
-    reader.onload = () => {
-      if (typeof reader.result !== "string") {
-        setImageStatus("Could not read the selected image.");
-        return;
-      }
+    setImageStatus(`Selected: ${file.name}`);
+  } catch (error) {
+    console.error("[ChatInput] Image selection failed:", error);
+    setSelectedImage(null);
+    setImageStatus("Could not read the selected image. Please try again.");
+  }
+};
 
-      setSelectedImage({
-        name: file.name,
-        dataUrl: reader.result,
-      });
-
-      setImageStatus(`Selected: ${file.name}`);
-    };
-
-    reader.onerror = () => {
-      setImageStatus("Could not read the selected image.");
-    };
-
-    reader.readAsDataURL(file);
-  };
 
   const handleSendMessage = async () => {
     const prompt = value.trim();

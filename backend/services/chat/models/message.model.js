@@ -1,4 +1,41 @@
+
 import mongoose from "mongoose";
+
+// Artifact metadata schema shared by PDF, PPT, code and image files.
+const artifactSchema = new mongoose.Schema(
+  {
+    artifactId: {
+      type: String,
+    },
+    filename: {
+      type: String,
+    },
+    contentType: {
+      type: String,
+    },
+    type: {
+      type: String,
+    },
+    size: {
+      type: Number,
+    },
+    createdAt: {
+      type: Date,
+    },
+    previewUrl: {
+      type: String,
+    },
+    downloadUrl: {
+      type: String,
+    },
+    url: {
+      type: String,
+    },
+  },
+  {
+    _id: false,
+  }
+);
 
 const messageSchema = new mongoose.Schema(
   {
@@ -6,12 +43,21 @@ const messageSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Conversation",
     },
+
     role: {
       type: String,
       enum: ["user", "assistant"],
     },
-    content: String,
-    images: [String],
+
+    content: {
+      type: String,
+    },
+
+    // Supports both legacy string images and new image metadata objects.
+    images: {
+      type: [mongoose.Schema.Types.Mixed],
+      default: [],
+    },
 
     sources: {
       type: [
@@ -25,23 +71,20 @@ const messageSchema = new mongoose.Schema(
       ],
       default: [],
     },
-    
+
+    // Supports PDF, PPT, code and generated image artifacts.
     artifacts: {
-      type: [
-        {
-          artifactId: String,
-          filename: String,
-          contentType: String,
-          downloadUrl: String,
-        },
-      ],
+      type: [artifactSchema],
       default: [],
     },
   },
   {
     timestamps: true,
-  },
+  }
 );
 
-const Message = mongoose.model("Message", messageSchema);
+const Message =
+  mongoose.models.Message ||
+  mongoose.model("Message", messageSchema);
+
 export default Message;
