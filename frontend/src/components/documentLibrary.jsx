@@ -53,9 +53,19 @@ function DocumentLibrary({ isOpen, onClose }) {
   }, []);
 
   useEffect(() => {
-    if (isOpen) {
-      loadDocuments();
-    }
+    if (!isOpen) return;
+
+    let cancelled = false;
+
+    Promise.resolve().then(() => {
+      if (!cancelled) {
+        void loadDocuments();
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [isOpen, loadDocuments]);
 
   const handleDelete = async (document) => {
@@ -127,10 +137,7 @@ function DocumentLibrary({ isOpen, onClose }) {
               title="Refresh documents"
               className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 hover:bg-white/[0.06] hover:text-white disabled:opacity-50"
             >
-              <RefreshCw
-                size={16}
-                className={loading ? "animate-spin" : ""}
-              />
+              <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
             </button>
 
             <button
@@ -176,8 +183,8 @@ function DocumentLibrary({ isOpen, onClose }) {
                 No documents yet
               </h3>
               <p className="max-w-xs text-xs leading-5 text-slate-500">
-                Upload a PDF, TXT, Markdown, or DOCX file using the paperclip
-                in your chat to add it to your knowledge base.
+                Upload a PDF, TXT, Markdown, or DOCX file using the paperclip in
+                your chat to add it to your knowledge base.
               </p>
             </div>
           ) : (

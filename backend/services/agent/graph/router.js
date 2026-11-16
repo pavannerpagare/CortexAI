@@ -46,8 +46,8 @@ architecture,
 API design.
 
 pdf:
-Questions about generate PDFs
-or document context.
+Questions explicitly asking to create, generate, edit,
+or format PDF files.
 
 ppt:
 Questions about generate ppts
