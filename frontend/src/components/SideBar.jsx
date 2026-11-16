@@ -8,6 +8,10 @@ import {
   PenSquare,
   Plus,
   User,
+  Trash2,
+  Pencil,
+  Check,
+  X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getConversations } from "../features/getConversations";
@@ -16,16 +20,26 @@ import {
   addConversation,
   setConversations,
   setSelectedConversation,
+  removeConversation,
+  setConvTitle,
 } from "../redux/conversationSlice";
 import { createConversation } from "../features/createConversation";
 import logOut from "../features/logOut";
 import { setUserData } from "../redux/userSlice";
 import DocumentLibrary from "./documentLibrary";
+import { deleteConversation } from "../features/deleteConversation";
+import { updateConversation } from "../features/updateConversation";
+import { removeConversationMessages } from "../redux/messageSlice";
+
 function SideBar() {
   const [collapsed, setCollapsed] = useState(false);
   const [showDocumentLibrary, setShowDocumentLibrary] = useState(false);
   const dispatch = useDispatch();
   const [imageError, setImageError] = useState(false);
+  const [deletingConversationId, setDeletingConversationId] = useState(null);
+  const [renamingConversationId, setRenamingConversationId] = useState(null);
+  const [renamingTitle, setRenamingTitle] = useState("");
+  const [savingConversationId, setSavingConversationId] = useState(null);
   const { conversations, selectedConversation } = useSelector(
     (state) => state.conversation,
   );
@@ -43,6 +57,98 @@ function SideBar() {
 
     getConv();
   }, [userData?.userId, dispatch]);
+
+  const handleDeleteConversation = async (
+    event,
+    conversationId,
+    conversationTitle,
+  ) => {
+    event.stopPropagation();
+
+    const confirmed = window.confirm(
+      `Delete "${conversationTitle || "New Chat"}"? This will permanently delete this conversation and its messages.`,
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setDeletingConversationId(conversationId);
+
+      await deleteConversation(conversationId);
+
+      dispatch(removeConversation(conversationId));
+      dispatch(removeConversationMessages(conversationId));
+      
+    } catch (error) {
+      console.error("Failed to delete conversation:", error);
+
+      window.alert(
+        error?.response?.data?.message ||
+          "Failed to delete conversation. Please try again.",
+      );
+    } finally {
+      setDeletingConversationId(null);
+    }
+  };
+
+  const handleStartRename = (event, conversation) => {
+    event.stopPropagation();
+
+    setRenamingConversationId(conversation._id);
+    setRenamingTitle(conversation.title || "");
+  };
+
+  const handleCancelRename = (event) => {
+    event.stopPropagation();
+
+    setRenamingConversationId(null);
+    setRenamingTitle("");
+  };
+
+  const handleSaveRename = async (event, conversationId) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const cleanTitle = renamingTitle.trim();
+
+    if (!cleanTitle) {
+      window.alert("Conversation title cannot be empty.");
+      return;
+    }
+
+    if (cleanTitle.length > 100) {
+      window.alert("Title must be 100 characters or fewer.");
+      return;
+    }
+
+    try {
+      setSavingConversationId(conversationId);
+
+      const updatedConversation = await updateConversation({
+        id: conversationId,
+        title: cleanTitle,
+      });
+
+      dispatch(
+        setConvTitle({
+          conversationId,
+          title: updatedConversation?.title || cleanTitle,
+        }),
+      );
+
+      setRenamingConversationId(null);
+      setRenamingTitle("");
+    } catch (error) {
+      console.error("Rename conversation failed:", error);
+
+      window.alert(
+        error?.response?.data?.message ||
+          "Unable to rename conversation. Please try again.",
+      );
+    } finally {
+      setSavingConversationId(null);
+    }
+  };
 
   const handleCreateConversation = async () => {
     try {
@@ -176,7 +282,7 @@ function SideBar() {
                         rounded-xl py-[10px]
                         border-none cursor-pointer
                         hover:opacity-90 transition-opacity duration-150"
-            onClick={() => dispatch(setSelectedConversation(null))}
+            onClick={handleCreateConversation}
           >
             <Plus size={15} />
             New Chat
@@ -218,7 +324,8 @@ function SideBar() {
             ::-webkit-scrollbar]:hidden"
         >
           {conversations.map((conv, i) => {
-            const isActive = selectedConversation?._id == conv?._id;
+            const isActive = selectedConversation?._id === conv?._id;
+            const isDeleting = deletingConversationId === conv._id;
 
             return (
               <div
@@ -227,23 +334,111 @@ function SideBar() {
                 className={`flex items-center gap-2.5 cursor-pointer mb-0.5 px-3 py-2.5 rounded-[10px] border transition-colors duration-150 ${
                   isActive
                     ? "bg-indigo-500/10 border-indigo-500/[0.18]"
-                    : "bg-transparent border-transparent"
+                    : "bg-transparent border-transparent hover:bg-white/[0.04]"
                 }`}
               >
                 <div
                   className={`flex items-center justify-center shrink-0 w-[28px] h-[28px] rounded-lg
-                    transition-colors duration-150
-            ${isActive ? "bg-indigo-500/15 text-indigo-400" : "bg-white/[0.05] text-slate-500 "}`}
+        transition-colors duration-150
+        ${
+          isActive
+            ? "bg-indigo-500/15 text-indigo-400"
+            : "bg-white/[0.05] text-slate-500"
+        }`}
                 >
                   <MessageSquare size={13} />
                 </div>
 
-                <span
-                  className={`text-[13px] font-medium truncate 
-                ${isActive ? "text-slate-100" : "text-slate-300"}`}
+                {renamingConversationId === conv._id ? (
+                  <div
+                    className="flex items-center flex-1 min-w-0 gap-1"
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    <input
+                      type="text"
+                      value={renamingTitle}
+                      maxLength={100}
+                      autoFocus
+                      disabled={savingConversationId === conv._id}
+                      onChange={(event) => setRenamingTitle(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          handleSaveRename(event, conv._id);
+                        }
+                        if (event.key === "Escape") {
+                          handleCancelRename(event);
+                        }
+                      }}
+                      className="flex-1 min-w-0 w-full bg-white/[0.06]
+      border border-indigo-500/40 rounded-md px-2 py-1
+      text-xs text-white outline-none"
+                    />
+
+                    <button
+                      type="button"
+                      title="Save title"
+                      disabled={
+                        !renamingTitle.trim() ||
+                        savingConversationId === conv._id
+                      }
+                      onClick={(event) => handleSaveRename(event, conv._id)}
+                      className="flex items-center justify-center w-6 h-6
+      rounded-md border-none bg-transparent text-green-400
+      hover:bg-green-500/10 disabled:opacity-40"
+                    >
+                      <Check size={14} />
+                    </button>
+
+                    <button
+                      type="button"
+                      title="Cancel rename"
+                      disabled={savingConversationId === conv._id}
+                      onClick={handleCancelRename}
+                      className="flex items-center justify-center w-6 h-6
+      rounded-md border-none bg-transparent text-slate-400
+      hover:bg-white/[0.08]"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <span
+                      className={`text-[13px] font-medium truncate flex-1 min-w-0
+      ${isActive ? "text-slate-100" : "text-slate-300"}`}
+                    >
+                      {conv?.title || "New Chat"}
+                    </span>
+
+                    <button
+                      type="button"
+                      title="Rename conversation"
+                      onClick={(event) => handleStartRename(event, conv)}
+                      className="flex items-center justify-center shrink-0 w-7 h-7
+      rounded-lg border-none bg-transparent text-slate-600
+      hover:bg-indigo-500/10 hover:text-indigo-400"
+                    >
+                      <Pencil size={13} />
+                    </button>
+                  </>
+                )}
+
+                <button
+                  type="button"
+                  title="Delete conversation"
+                  aria-label={`Delete ${conv?.title || "New Chat"}`}
+                  disabled={isDeleting}
+                  onClick={(event) =>
+                    handleDeleteConversation(event, conv._id, conv?.title)
+                  }
+                  className="flex items-center justify-center shrink-0 w-7 h-7 rounded-lg
+        border-none bg-transparent text-slate-600
+        hover:bg-red-500/10 hover:text-red-400
+        disabled:opacity-40 disabled:cursor-not-allowed
+        transition-colors duration-150"
                 >
-                  {conv?.title || "New Chat"}
-                </span>
+                  <Trash2 size={14} />
+                </button>
               </div>
             );
           })}

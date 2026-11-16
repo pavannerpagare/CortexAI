@@ -12,11 +12,15 @@ export default async function uploadDocument(file) {
 
     return data;
   } catch (error) {
-    throw new Error(
-      error.response?.data?.message ||
-        error.message ||
-        "Document upload failed. Check that the Agent service is running.",
-      { cause: error }
-    );
+    const status = error.response?.status;
+
+    const message =
+      status === 413
+        ? "File is too large. Please upload a document smaller than 8 MB."
+        : error.response?.data?.message ||
+          error.message ||
+          "Document upload failed. Check that the Agent service is running.";
+
+    throw new Error(message, { cause: error });
   }
 }
